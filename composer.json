@@ -1,0 +1,28 @@
+{
+  "name": "bright-cloud-studio/contao-osi-member-import",
+  "type": "contao-bundle",
+  "homepage": "http://brightcloudstudio.com/",
+  "keywords": ["contao", "member", "bright", "cloud", "studio"],
+  "description": "Backend CSV member importer with auto-grouping and bulk password reset emails (Contao 5.3 Legacy mode).",
+  "license": "LGPL-3.0+",
+  "authors":[
+      {
+          "name": "Bright Cloud Studio",
+          "homepage": "https://brightcloudstudio.com",
+          "email": "john@brightcloudstudio.com",
+          "role": "Developer"
+      }
+  ],
+  "require": {
+    "php": "^8.1",
+    "contao/core-bundle": "^5.3"
+  },
+  "autoload": {
+    "psr-4": {
+      "Brightcloud\\\\BcsMemberImport\\\\": "src/"
+    }
+  },
+  "extra": {
+    "contao-manager-plugin": "Brightcloud\\\\BcsMemberImport\\\\ContaoManager\\\\Plugin"
+  }
+}
