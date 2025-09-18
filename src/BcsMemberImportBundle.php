@@ -1,13 +1,11 @@
 <?php
 
-namespace Brightcloud\BcsMemberImport;
+declare(strict_types=1);
+
+namespace Bcs\MemberImport;
 
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 
 class BcsMemberImportBundle extends Bundle
 {
-    public function getPath(): string
-    {
-        return \dirname(__DIR__);
-    }
 }

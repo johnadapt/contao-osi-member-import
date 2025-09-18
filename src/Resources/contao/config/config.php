@@ -1,7 +1,8 @@
 <?php
 
-// Register the backend module under System instead of accounts
-$GLOBALS['BE_MOD']['system']['bcs_member_import'] = [
-    'callback' => \BrightCloudStudio\MemberImport\MemberImport::class,
-    'icon'     => 'system/themes/flexible/icons/mgroup.svg',
+// Register backend module under Accounts → Member Import
+$GLOBALS['BE_MOD']['accounts']['bcs_member_import'] = [
+    'tables' => [],
+    'callback' => \\Bcs\\MemberImport\\Module\\MemberImport::class,
+    'icon' => 'system/themes/flexible/icons/members.svg'
 ];

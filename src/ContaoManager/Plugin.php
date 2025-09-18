@@ -1,7 +1,10 @@
 <?php
 
-namespace Brightcloud\BcsMemberImport\ContaoManager;
+declare(strict_types=1);
 
+namespace Bcs\MemberImport\ContaoManager;
+
+use Bcs\MemberImport\BcsMemberImportBundle;
 use Contao\CoreBundle\ContaoCoreBundle;
 use Contao\ManagerPlugin\Bundle\BundlePluginInterface;
 use Contao\ManagerPlugin\Bundle\Config\BundleConfig;
@@ -12,7 +15,7 @@ class Plugin implements BundlePluginInterface
     public function getBundles(ParserInterface $parser): array
     {
         return [
-            BundleConfig::create('Brightcloud\BcsMemberImport\BcsMemberImportBundle')
+            BundleConfig::create(BcsMemberImportBundle::class)
                 ->setLoadAfter([ContaoCoreBundle::class]),
         ];
     }
