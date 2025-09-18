@@ -24,7 +24,7 @@ class MemberImport extends BackendModule
         $this->Template->message = Message::generate();
         $this->Template->report = null;
         $this->Template->emailSubject = Config::get('bcs_member_import_email_subject') ?: 'Reset your account password';
-        $this->Template->emailBody = Config::get('bcs_member_import_email_body') ?: "Hi {{firstname}},\n\nPlease set your password using this link:\n\n{{reset_link}}\n\nThis link will expire soon.";
+        $this->Template->emailBody = Config::get('bcs_member_import_email_body') ?: "Hi {{firstname}},\n\nPlease set your password using this link:\n\n{{reset_link}}\n\nThis link will expire soon.\n\nBest regards,\nYour Team";
 
         if (Input::post('bcs_import') !== null) {
             if (!$this->isValidCsrf((string) Input::post('_token'))) {
@@ -68,105 +68,239 @@ class MemberImport extends BackendModule
     {
         if (empty($_FILES['csv']['tmp_name']) || !is_uploaded_file($_FILES['csv']['tmp_name'])) {
             Message::addError('Please choose a CSV file.');
-            return ['total'=>0,'created'=>0,'groupsCreated'=>0,'failures'=>[]];
+            return ['total'=>0,'created'=>0,'groupsCreated'=>0,'failures'=>[],'newlyCreated'=>[]];
         }
 
         $fh = fopen($_FILES['csv']['tmp_name'], 'r');
         if (!$fh) {
             Message::addError('Unable to read CSV file.');
-            return ['total'=>0,'created'=>0,'groupsCreated'=>0,'failures'=>[]];
+            return ['total'=>0,'created'=>0,'groupsCreated'=>0,'failures'=>[],'newlyCreated'=>[]];
         }
 
         $headers = fgetcsv($fh);
         if (!$headers) {
             fclose($fh);
             Message::addError('CSV missing header row.');
-            return ['total'=>0,'created'=>0,'groupsCreated'=>0,'failures'=>[]];
+            return ['total'=>0,'created'=>0,'groupsCreated'=>0,'failures'=>[],'newlyCreated'=>[]];
         }
 
+        // Clean headers and create index
         $headers = array_map('trim', $headers);
         $index = array_flip($headers);
+        
+        // Check required columns
         $required = ['firstname','lastname','email','username','member_group'];
         foreach ($required as $col) {
             if (!isset($index[$col])) {
                 fclose($fh);
                 Message::addError('Missing required header: '.$col);
-                return ['total'=>0,'created'=>0,'groupsCreated'=>0,'failures'=>[]];
+                return ['total'=>0,'created'=>0,'groupsCreated'=>0,'failures'=>[],'newlyCreated'=>[]];
             }
         }
 
-        $total=0;$created=0;$groupsCreated=0;$failures=[];$newlyCreated=[];$groupCache=[];
-        $rowNum=1;
-        while(($row=fgetcsv($fh))!==false){
-            $rowNum++;$total++;
-            $data=[];
-            foreach($headers as $i=>$name){$data[$name]=$row[$i]??'';}
+        $total = 0;
+        $created = 0;
+        $groupsCreated = 0;
+        $failures = [];
+        $newlyCreated = [];
+        $groupCache = [];
+        $rowNum = 1; // Header row
 
-            try{
-                $email=$data['email']??'';
-                $user=$data['username']??'';
-                $label=$data['member_group']??'';
-                if(!filter_var($email,FILTER_VALIDATE_EMAIL)) throw new \RuntimeException('Invalid email.');
-                if($user==='') throw new \RuntimeException('Missing username.');
-                if($label==='') throw new \RuntimeException('Missing member_group.');
+        while (($row = fgetcsv($fh)) !== false) {
+            $rowNum++;
+            $total++;
 
-                $groupId=$groupCache[$label]??null;
-                if(!$groupId){
-                    $existing=MemberGroupModel::findOneBy('name',$label);
-                    if($existing){$groupId=$existing->id;}
-                    else{$g=new MemberGroupModel();$g->tstamp=time();$g->name=$label;$g->save();$groupId=$g->id;$groupsCreated++;}
-                    $groupCache[$label]=$groupId;
+            // Map row data to headers
+            $data = [];
+            foreach ($headers as $i => $name) {
+                $data[$name] = isset($row[$i]) ? trim($row[$i]) : '';
+            }
+
+            try {
+                $email = $data['email'] ?? '';
+                $username = $data['username'] ?? '';
+                $firstname = $data['firstname'] ?? '';
+                $lastname = $data['lastname'] ?? '';
+                $memberGroup = $data['member_group'] ?? '';
+                $password = $data['password'] ?? '';
+
+                // Validation
+                if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    throw new \RuntimeException('Invalid email address.');
+                }
+                if (empty($username)) {
+                    throw new \RuntimeException('Username is required.');
+                }
+                if (empty($firstname)) {
+                    throw new \RuntimeException('First name is required.');
+                }
+                if (empty($lastname)) {
+                    throw new \RuntimeException('Last name is required.');
+                }
+                if (empty($memberGroup)) {
+                    throw new \RuntimeException('Member group is required.');
                 }
 
-                if(MemberModel::findOneBy('email',$email)) throw new \RuntimeException('Member exists.');
+                // Check if member already exists (by email or username)
+                $existingByEmail = MemberModel::findOneBy('email', $email);
+                $existingByUsername = MemberModel::findOneBy('username', $username);
+                
+                if ($existingByEmail || $existingByUsername) {
+                    throw new \RuntimeException('Member already exists with this email or username.');
+                }
 
-                $m=new MemberModel();
-                $m->tstamp=time();
-                $m->dateAdded=time();
-                $m->firstname=$data['firstname']??'';
-                $m->lastname=$data['lastname']??'';
-                $m->email=$email;
-                $m->username=$user;
-                $m->password=password_hash($data['password']?:bin2hex(random_bytes(6)), PASSWORD_DEFAULT);
-                $m->login=1;
-                $m->disable='';
-                $m->groups=StringUtil::serialize([$groupId]);
-                $m->save();
+                // Handle member group creation/retrieval
+                $groupId = $groupCache[$memberGroup] ?? null;
+                if (!$groupId) {
+                    $existingGroup = MemberGroupModel::findOneBy('name', $memberGroup);
+                    if ($existingGroup) {
+                        $groupId = $existingGroup->id;
+                    } else {
+                        // Create new group
+                        $newGroup = new MemberGroupModel();
+                        $newGroup->tstamp = time();
+                        $newGroup->name = $memberGroup;
+                        $newGroup->save();
+                        $groupId = $newGroup->id;
+                        $groupsCreated++;
+                    }
+                    $groupCache[$memberGroup] = $groupId;
+                }
+
+                // Create new member
+                $member = new MemberModel();
+                $member->tstamp = time();
+                $member->dateAdded = time();
+                $member->firstname = $firstname;
+                $member->lastname = $lastname;
+                $member->email = $email;
+                $member->username = $username;
+                
+                // Handle password - if empty, generate random one
+                if (empty($password)) {
+                    $password = bin2hex(random_bytes(8)); // Generate 16 character random password
+                }
+                $member->password = password_hash($password, PASSWORD_DEFAULT);
+                
+                $member->login = 1;
+                $member->disable = '';
+                $member->groups = StringUtil::serialize([$groupId]);
+
+                // Add other optional fields if they exist in CSV
+                $optionalFields = ['company', 'street', 'postal', 'city', 'state', 'country', 'phone', 'mobile', 'fax', 'website', 'language', 'gender', 'dateOfBirth'];
+                foreach ($optionalFields as $field) {
+                    if (isset($data[$field]) && !empty($data[$field])) {
+                        // Handle special date field
+                        if ($field === 'dateOfBirth' && !empty($data[$field])) {
+                            $dateValue = strtotime($data[$field]);
+                            if ($dateValue !== false) {
+                                $member->$field = $dateValue;
+                            }
+                        } else {
+                            $member->$field = $data[$field];
+                        }
+                    }
+                }
+
+                $member->save();
                 $created++;
-                $newlyCreated[]=['id'=>$m->id,'firstname'=>$m->firstname,'lastname'=>$m->lastname,'email'=>$m->email,'username'=>$m->username,'member_group'=>$label];
-            }catch(\Throwable $e){
-                $failures[]=['row'=>$rowNum,'email'=>$data['email']??'','reason'=>$e->getMessage()];
+                
+                $newlyCreated[] = [
+                    'id' => $member->id,
+                    'firstname' => $member->firstname,
+                    'lastname' => $member->lastname,
+                    'email' => $member->email,
+                    'username' => $member->username,
+                    'member_group' => $memberGroup
+                ];
+
+            } catch (\Throwable $e) {
+                $failures[] = [
+                    'row' => $rowNum,
+                    'email' => $data['email'] ?? 'N/A',
+                    'username' => $data['username'] ?? 'N/A',
+                    'reason' => $e->getMessage()
+                ];
             }
         }
+        
         fclose($fh);
-        Message::addConfirmation("Processed $total rows. Created $created members. $groupsCreated groups created.");
-        return ['total'=>$total,'created'=>$created,'groupsCreated'=>$groupsCreated,'failures'=>$failures,'newlyCreated'=>$newlyCreated];
+
+        if ($created > 0) {
+            Message::addConfirmation("Successfully processed $total rows. Created $created members and $groupsCreated new groups.");
+        }
+        
+        if (!empty($failures)) {
+            Message::addError(count($failures) . " rows failed to import. See details below.");
+        }
+
+        return [
+            'total' => $total,
+            'created' => $created,
+            'groupsCreated' => $groupsCreated,
+            'failures' => $failures,
+            'newlyCreated' => $newlyCreated
+        ];
     }
 
-    protected function sendPasswordResets(array $memberIds,string $subject,string $body): void
+    protected function sendPasswordResets(array $memberIds, string $subject, string $body): void
     {
-        $memberIds=array_map('intval',$memberIds);
-        $mailer=System::getContainer()->get('mailer');
-        $siteUrl=Environment::get('url');
-        $resetPage='/reset-password.html';
+        if (empty($memberIds)) {
+            Message::addError('No members selected for password reset.');
+            return;
+        }
 
-        $sent=0;
-        foreach($memberIds as $id){
-            $m=MemberModel::findByPk($id);
-            if(!$m||!$m->email) continue;
-            $token=bin2hex(random_bytes(16));
-            $m->activation=$token;
-            $m->save();
-            $resetLink=$siteUrl.$resetPage.'?token='.$token;
-            $rendered=strtr($body,[
-                '{{firstname}}'=>$m->firstname,
-                '{{lastname}}'=>$m->lastname,
-                '{{email}}'=>$m->email,
-                '{{username}}'=>$m->username,
-                '{{reset_link}}'=>$resetLink
+        $memberIds = array_map('intval', $memberIds);
+        $mailer = System::getContainer()->get('mailer');
+        $siteUrl = rtrim(Environment::get('url'), '/');
+        $resetPage = '/reset-password.html'; // This should match your frontend page
+
+        $sent = 0;
+        $failed = 0;
+
+        foreach ($memberIds as $id) {
+            $member = MemberModel::findByPk($id);
+            if (!$member || !$member->email) {
+                $failed++;
+                continue;
+            }
+
+            // Generate reset token
+            $token = bin2hex(random_bytes(16));
+            $member->activation = $token;
+            $member->save();
+
+            // Create reset link
+            $resetLink = $siteUrl . $resetPage . '?token=' . $token;
+
+            // Replace placeholders in email body
+            $renderedBody = strtr($body, [
+                '{{firstname}}' => $member->firstname,
+                '{{lastname}}' => $member->lastname,
+                '{{email}}' => $member->email,
+                '{{username}}' => $member->username,
+                '{{reset_link}}' => $resetLink
             ]);
-            $email=(new Email())->to($m->email)->subject($subject)->text($rendered);
-            try{$mailer->send($email);$sent++;}catch(\Throwable $e){Message::addError('Mail fail to '.$m->email);}        }
-        Message::addConfirmation("Sent $sent reset email(s).");
+
+            try {
+                $email = (new Email())
+                    ->to($member->email)
+                    ->subject($subject)
+                    ->text($renderedBody);
+                
+                $mailer->send($email);
+                $sent++;
+            } catch (\Throwable $e) {
+                Message::addError('Failed to send email to ' . $member->email . ': ' . $e->getMessage());
+                $failed++;
+            }
+        }
+
+        if ($sent > 0) {
+            Message::addConfirmation("Successfully sent $sent password reset email(s).");
+        }
+        if ($failed > 0) {
+            Message::addError("$failed email(s) failed to send.");
+        }
     }
 }

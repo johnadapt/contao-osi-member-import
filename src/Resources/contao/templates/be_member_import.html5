@@ -17,12 +17,16 @@ $csrf = \Contao\System::getContainer()->get('contao.csrf.token_manager')->getTok
       <input type="hidden" name="_token" value="<?= $csrf ?>">
       <div class="tl_tbox">
         <h3><label for="csv">CSV file</label></h3>
-        <input type="file" name="csv" id="csv" accept=".csv" class="tl_upload">
-        <p class="tl_help tl_tip">Must include headers: firstname, lastname, email, username, password (optional), member_group</p>
+        <input type="file" name="csv" id="csv" accept=".csv" class="tl_upload" required>
+        <p class="tl_help tl_tip">
+          <strong>Required headers:</strong> firstname, lastname, email, username, member_group<br>
+          <strong>Optional headers:</strong> password, company, street, postal, city, state, country, phone, mobile, fax, website, language, gender, dateOfBirth<br>
+          <strong>Note:</strong> If password is empty, a random password will be generated. Date format for dateOfBirth: YYYY-MM-DD
+        </p>
       </div>
     </div>
     <div class="tl_formbody_submit">
-      <button type="submit" name="bcs_import" class="tl_submit">Import</button>
+      <button type="submit" name="bcs_import" class="tl_submit">Import Members</button>
     </div>
   </form>
 
@@ -30,18 +34,31 @@ $csrf = \Contao\System::getContainer()->get('contao.csrf.token_manager')->getTok
     <div class="tl_box">
       <h3>Import Report</h3>
       <ul>
-        <li>Total rows: <strong><?= (int) $this->report['total'] ?></strong></li>
-        <li>Created members: <strong><?= (int) $this->report['created'] ?></strong></li>
-        <li>Groups created: <strong><?= (int) $this->report['groupsCreated'] ?></strong></li>
-        <li>Failures: <strong><?= count($this->report['failures']) ?></strong></li>
+        <li>Total rows processed: <strong><?= (int) $this->report['total'] ?></strong></li>
+        <li>Members successfully created: <strong><?= (int) $this->report['created'] ?></strong></li>
+        <li>New groups created: <strong><?= (int) $this->report['groupsCreated'] ?></strong></li>
+        <li>Failed imports: <strong><?= count($this->report['failures']) ?></strong></li>
       </ul>
 
       <?php if (!empty($this->report['failures'])): ?>
+        <h4>Import Failures</h4>
         <table class="tl_listing">
-          <thead><tr><th>Row</th><th>Email</th><th>Reason</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Row #</th>
+              <th>Email</th>
+              <th>Username</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
           <tbody>
             <?php foreach ($this->report['failures'] as $f): ?>
-              <tr><td><?= (int)$f['row'] ?></td><td><?= htmlspecialchars($f['email'] ?? '') ?></td><td><?= htmlspecialchars($f['reason']) ?></td></tr>
+              <tr>
+                <td><?= (int)$f['row'] ?></td>
+                <td><?= htmlspecialchars($f['email'] ?? 'N/A') ?></td>
+                <td><?= htmlspecialchars($f['username'] ?? 'N/A') ?></td>
+                <td><?= htmlspecialchars($f['reason']) ?></td>
+              </tr>
             <?php endforeach; ?>
           </tbody>
         </table>
@@ -72,15 +89,19 @@ $csrf = \Contao\System::getContainer()->get('contao.csrf.token_manager')->getTok
           </tbody>
         </table>
 
-        <h4>Email Subject</h4>
-        <input type="text" name="email_subject" value="<?= htmlspecialchars($this->emailSubject) ?>" class="tl_text" style="width:100%">
+        <div class="tl_tbox">
+          <h4>Email Subject</h4>
+          <input type="text" name="email_subject" value="<?= htmlspecialchars($this->emailSubject) ?>" class="tl_text" style="width:100%">
+        </div>
 
-        <h4 class="mar-top">Email Body</h4>
-        <textarea name="email_body" rows="10" class="tl_textarea" style="width:100%"><?= htmlspecialchars($this->emailBody) ?></textarea>
-        <p class="tl_help tl_tip">Placeholders: {{firstname}}, {{lastname}}, {{email}}, {{username}}, {{reset_link}}</p>
+        <div class="tl_tbox">
+          <h4 class="mar-top">Email Body</h4>
+          <textarea name="email_body" rows="10" class="tl_textarea" style="width:100%"><?= htmlspecialchars($this->emailBody) ?></textarea>
+          <p class="tl_help tl_tip">Placeholders: {{firstname}}, {{lastname}}, {{email}}, {{username}}, {{reset_link}}</p>
+        </div>
 
         <p class="mar-top"><label><input type="checkbox" name="save_defaults" value="1"> Save these as the new defaults</label></p>
-        <div class="tl_formbody_submit"><button type="submit" class="tl_submit">Send Password Reset</button></div>
+        <div class="tl_formbody_submit"><button type="submit" class="tl_submit">Send Password Reset Emails</button></div>
       </form>
     </div>
 
