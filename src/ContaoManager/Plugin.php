@@ -1,22 +1,18 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Bcs\MemberImport\ContaoManager;
 
-use Bcs\MemberImport\BcsMemberImportBundle;
-use Contao\CoreBundle\ContaoCoreBundle;
 use Contao\ManagerPlugin\Bundle\BundlePluginInterface;
 use Contao\ManagerPlugin\Bundle\Config\BundleConfig;
 use Contao\ManagerPlugin\Bundle\Parser\ParserInterface;
 
 class Plugin implements BundlePluginInterface
 {
-    public function getBundles(ParserInterface $parser): array
+    public function getBundles(ParserInterface $parser)
     {
         return [
-            BundleConfig::create(BcsMemberImportBundle::class)
-                ->setLoadAfter([ContaoCoreBundle::class]),
+            BundleConfig::create('Bcs\MemberImport\BcsMemberImportBundle')
+                ->setLoadAfter(['Contao\CoreBundle\ContaoCoreBundle']),
         ];
     }
 }

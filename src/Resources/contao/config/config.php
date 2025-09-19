@@ -1,5 +1,7 @@
 <?php
 
+use Contao\System;
+
 // Register backend module under Accounts → Member Import
 $GLOBALS['BE_MOD']['accounts']['bcs_member_import'] = [
     'tables' => [],
