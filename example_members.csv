@@ -1,6 +1,0 @@
-firstname,lastname,email,username,password,member_group,company,street,postal,city,state,country,phone,mobile,website,gender,dateOfBirth
-John,Doe,john.doe@example.com,johndoe,mypassword123,Administrators,Acme Corp,123 Main St,12345,Anytown,CA,USA,555-1234,555-5678,https://johndoe.com,male,1985-03-15
-Jane,Smith,jane.smith@example.com,janesmith,,Premium Members,Tech Solutions,456 Oak Ave,67890,Springfield,NY,USA,555-2345,555-6789,,female,1990-07-22
-Bob,Johnson,bob.johnson@example.com,bobjohnson,securepass456,Standard Members,,,,,,,,,,,1978-11-08
-Alice,Wilson,alice.wilson@example.com,alicew,,Premium Members,Creative Agency,789 Pine Rd,54321,Riverside,TX,USA,555-3456,555-7890,https://creative.agency,female,1992-01-30
-Mike,Brown,mike.brown@example.com,mikebrown,password789,Administrators,Brown Industries,321 Elm St,98765,Lakewood,FL,USA,555-4567,555-8901,,male,1980-09-12

@@ -1,18 +1,4 @@
 <div class="tl_listing_container">
-  <h1><?= $this->headline ?></h1>
-
-  <form method="post" enctype="multipart/form-data">
-    <input type="hidden" name="FORM_SUBMIT" value="tl_member_import">
-
-    <div class="tl_formbody">
-      <div class="widget">
-        <h3><label for="csv_file">CSV File</label></h3>
-        <input type="file" name="csv_file" id="csv_file" class="tl_text">
-      </div>
-    </div>
-
-    <div class="tl_submit_container">
-      <button type="submit" class="tl_submit">Import Members</button>
-    </div>
-  </form>
+    <h2 class="tl_headline">BCS Member Import</h2>
+    <p><?= \$this->content ?></p>
 </div>
