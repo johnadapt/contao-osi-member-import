@@ -1,0 +1,4 @@
+<p>Hello ##firstname## ##lastname## (##username##),</p>
+<p>You have been imported into our system. Please click the link below to set your password:</p>
+<p><a href="##reset_link##">Reset your password</a></p>
+<p>Thank you!</p>

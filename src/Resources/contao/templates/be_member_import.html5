@@ -1,4 +1,16 @@
 <div class="tl_listing_container">
-    <h2 class="tl_headline">BCS Member Import</h2>
-    <p><?= \$this->content ?></p>
+    <h2 class="tl_headline">Member Importer</h2><br><br>
+    <?php if ($this->messages): ?>
+    <!--<h2 class="tl_headline">Progress</h2><br><br>-->
+    <?= $this->messages ?>
+    <?php endif; ?>
+    <?= $this->content ?>
+<br><br>
+
+    <div class="tl_info" style="margin-top:1rem; padding:1rem; background:#eef;">
+        <p><strong>About this importer:</strong></p>
+        <p>This tool allows you to import multiple members and their member groups from a CSV file.
+           Existing members/member groups are not modified — all imported members/member groups are new and can be edited later in the Contao backend.</p>
+        <p><a href="/files/member_csv_importer/example_members.csv" target="_blank">Download example CSV</a></p>
+    </div>
 </div>
