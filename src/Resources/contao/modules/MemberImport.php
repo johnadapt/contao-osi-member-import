@@ -216,21 +216,36 @@ $this->Template->content .= $html;
 
                 $rowGroups      = array_map('trim', explode(',', $row['groups'] ?? ''));
                 $memberGroupIds = [];
+                
                 foreach ($rowGroups as $gName) {
-                    if ($gName !== '' && isset($groupIds[$gName])) {
-                        $memberGroupIds[] = $groupIds[$gName];
+                    if ($gName === '') {
+                        continue;
+                    }
+                
+                    // ✅ Explicitly re-fetch group ID from DB to ensure it exists
+                    $objGroup = $db->prepare("SELECT id FROM tl_member_group WHERE name=?")->execute($gName);
+                    if ($objGroup->numRows > 0) {
+                        $memberGroupIds[] = (int) $objGroup->id;
                     }
                 }
-
+                
+                // If no valid groups found, skip this member
                 if (empty($memberGroupIds)) {
-                    $failed[] = ['firstname' => $row['firstname'] ?? '', 'lastname' => $row['lastname'] ?? '', 'email' => $email, 'reason' => 'no valid groups found'];
+                    $failed[] = [
+                        'firstname' => $row['firstname'] ?? '',
+                        'lastname'  => $row['lastname'] ?? '',
+                        'email'     => $email,
+                        'reason'    => 'no valid groups found'
+                    ];
                     continue;
                 }
-
-                static $memberFields = null;
+ 
+                 static $memberFields = null;
                 if ($memberFields === null) {
                     $memberFields = $db->getFieldNames('tl_member');
                 }
+                
+                // ✅ Assign serialized group IDs to member
 
                 $insert = [
                     'tstamp'    => time(),
@@ -244,11 +259,21 @@ $this->Template->content .= $html;
                     'groups'    => serialize($memberGroupIds),
                 ];
 
+                // Loop over CSV columns to add additional tl_member fields
                 foreach ($row as $col => $val) {
+                    // ✅ Skip "groups" column so it does NOT overwrite the serialized group IDs
+                    if ($col === 'groups') {
+                        continue;
+                    }
+                
                     if (in_array($col, $memberFields, true) && !isset($insert[$col])) {
                         $insert[$col] = $val;
                     }
                 }
+
+
+
+
 
                 $db->prepare("INSERT INTO tl_member %s")->set($insert)->execute();
 
