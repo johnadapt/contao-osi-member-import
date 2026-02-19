@@ -11,6 +11,7 @@
         <p><strong>About this importer:</strong></p>
         <p>This tool allows you to import multiple members and their member groups from a CSV file.
            Existing members/member groups are not modified — all imported members/member groups are new and can be edited later in the Contao backend.</p>
-        <p><a href="/files/member_csv_importer/example_members.csv" target="_blank">Download example CSV</a></p>
+        <p><a class="btn" style="padding:5px;background:#2a77d4;color:#fff;border:1px solid #1e5aa8;border-radius:3px;cursor:pointer;" href="/files/member_csv_importer/example_members.csv" target="_blank" download="example_members.csv">Download example CSV</a></p>
+        <p class="small">*If the file doesn’t download automatically, right click to select download linked file.</p>
     </div>
 </div>
